@@ -36,6 +36,9 @@ class Project extends HXProject {
 		meta.version     = VERSION;
 		meta.company     = COMPANY;
 		meta.buildNumber = BUILD_NUM;
+
+		// Fully-qualified — Main lives in source/undertale/Main.hx
+		app.main = "undertale.Main";
 	}
 
 	// ─── Sources ──────────────────────────────────────────────────────────────
