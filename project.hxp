@@ -1,0 +1,30 @@
+# HaxeFlixel Project (HXP) - Simple HTML5
+
+projectName=Undertale
+package=com.example.undertale
+version=0.1.0
+
+# Haxe version
+haxeVersion=4.3.7
+
+# Source path
+source=source
+
+# Assets paths
+assets=assets/images
+assets=assets/sounds
+assets=assets/music
+assets=assets/fonts
+
+# Libraries
+library=flixel:4.3.7
+library=flixel-ui
+
+# Target HTML5
+target=html5
+mainClass=Main
+output=bin
+width=640
+height=480
+fullscreen=false
+vsync=false
