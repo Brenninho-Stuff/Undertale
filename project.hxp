@@ -1,87 +1,165 @@
 import lime.tools.HXProject;
+import lime.tools.Architecture;
+import lime.tools.Platform;
 
 class Project extends HXProject {
 
+	// ─── Build Constants ───────────────────────────────────────────────────────
+	static inline final GAME_TITLE   : String = "Undertale Fan Engine";
+	static inline final PACKAGE_NAME : String = "com.brenninho.undertale";
+	static inline final VERSION      : String = "1.0.0";
+	static inline final COMPANY      : String = "Brenninho-Stuff";
+	static inline final BUILD_NUM    : String = "1";
+
+	static inline final CANVAS_W     : Int    = 640;
+	static inline final CANVAS_H     : Int    = 480;
+	static inline final TARGET_FPS   : Int    = 60;
+
+	// ─── Constructor ──────────────────────────────────────────────────────────
 	public function new() {
 
 		super();
 
-		// ─── Identity ────────────────────────────────────────────────────────────
-		meta.title       = "Undertale Fan Engine";
-		meta.packageName = "com.brenninho.undertale";
-		meta.version     = "1.0.0";
-		meta.company     = "Brenninho-Stuff";
-		meta.buildNumber = "1";
+		setupMeta();
+		setupSources();
+		setupAssets();
+		setupDependencies();
+		setupCompilerFlags();
+		setupWindowAndOutput();
+		setupIcons();
 
-		// ─── Source Directories ───────────────────────────────────────────────────
+	}
+
+	// ─── Meta ─────────────────────────────────────────────────────────────────
+	function setupMeta() {
+		meta.title       = GAME_TITLE;
+		meta.packageName = PACKAGE_NAME;
+		meta.version     = VERSION;
+		meta.company     = COMPANY;
+		meta.buildNumber = BUILD_NUM;
+	}
+
+	// ─── Sources ──────────────────────────────────────────────────────────────
+	function setupSources() {
 		sources.push("source");
+	}
 
-		// ─── Assets ───────────────────────────────────────────────────────────────
-		// Single recursive entry — Lime auto-detects every subfolder and file type
-		assets.push({ path: "assets", rename: "assets", include: "*" });
+	// ─── Assets ───────────────────────────────────────────────────────────────
+	// One recursive entry — Lime walks every subfolder and infers asset types
+	// automatically (.png → IMAGE, .ogg/.wav → SOUND, .ttf → FONT, etc.).
+	// Any new folder added under assets/ is picked up on the next build with
+	// zero configuration changes required here.
+	function setupAssets() {
+		assets.push({
+			path   : "assets",
+			rename : "assets",
+			include: "*"
+		});
+	}
 
-		// ─── Haxelib Dependencies ─────────────────────────────────────────────────
-		haxelibs.push({ name: "flixel",         version: "" });
-		haxelibs.push({ name: "flixel-addons",  version: "" });
-		haxelibs.push({ name: "flixel-ui",      version: "" });
-		haxelibs.push({ name: "openfl",         version: "" });
-		haxelibs.push({ name: "lime",           version: "" });
+	// ─── Dependencies ─────────────────────────────────────────────────────────
+	function setupDependencies() {
+		// Core HaxeFlixel stack — version strings intentionally left blank so
+		// haxelib resolves whichever version is set via `haxelib set`.
+		final libs = [
+			"flixel",          // Core HaxeFlixel game framework
+			"flixel-addons",   // Extra camera modes, transitions, tilemaps
+			"flixel-ui",       // UI widgets (buttons, sliders, text input)
+			"openfl",          // Flash-compatible display API on top of Lime
+			"lime",            // Low-level platform abstraction layer
+			"hscript",         // Runtime scripting for dialogue and events
+			"actuate",         // Lightweight tweening / animation library
+		];
 
-		// ─── Compiler Flags ───────────────────────────────────────────────────────
-		// Enable hscript for runtime scripting support (used in many UT engines)
-		haxedefs.push({ name: "HSCRIPT_ALLOWED",   value: "1" });
+		for (lib in libs)
+			haxelibs.push({ name: lib, version: "" });
+	}
 
-		// Enables the Flixel debug overlay in non-release builds
-		haxedefs.push({ name: "FLX_DEBUG",          value: "1" });
+	// ─── Compiler Flags ───────────────────────────────────────────────────────
+	function setupCompilerFlags() {
 
-		// Disable Flixel's verbose logging in release mode
-		#if release
-		haxedefs.push({ name: "FLX_NO_DEBUG",       value: "1" });
+		// ── Feature toggles ──────────────────────────────────────────────────
+		haxedefs.push({ name: "HSCRIPT_ALLOWED",            value: "1" }); // HScript events
+		haxedefs.push({ name: "MOD_SUPPORT",                value: "1" }); // Runtime mod loading
+		haxedefs.push({ name: "SAVE_STATES",                value: "1" }); // Developer save-states
+
+		// ── Flixel subsystem toggles ─────────────────────────────────────────
+		haxedefs.push({ name: "FLX_NO_TOUCH",               value: "1" }); // Disable touch (KB-only game)
+		haxedefs.push({ name: "FLX_NO_MOUSE",               value: "0" }); // Keep mouse support
+		haxedefs.push({ name: "FLX_NO_KEYBOARD",            value: "0" }); // Keep keyboard support
+		haxedefs.push({ name: "FLX_NO_SOUND_TRAY",          value: "1" }); // Hide built-in sound tray
+		haxedefs.push({ name: "FLX_NO_FOCUS_LOST_SCREEN",   value: "1" }); // Skip "Click to resume" overlay
+
+		// ── Debug vs. Release ────────────────────────────────────────────────
+		#if debug
+		haxedefs.push({ name: "FLX_DEBUG",                  value: "1" });
+		haxedefs.push({ name: "FLX_RECORD",                 value: "1" }); // Flixel replay recording
+		#else
+		haxedefs.push({ name: "FLX_NO_DEBUG",               value: "1" });
 		#end
 
-		// ─── HTML5-Specific Configuration ────────────────────────────────────────
-		if (target == HTML5) {
+	}
 
-			// Logical canvas resolution — Undertale's native resolution
-			window.width  = 640;
-			window.height = 480;
+	// ─── Window & Output ──────────────────────────────────────────────────────
+	function setupWindowAndOutput() {
 
-			// Stretch to fill browser viewport while preserving aspect ratio
-			window.resizable    = true;
-			window.fullscreen   = false;
-			window.hardware     = true;
-			window.vsync        = false;
+		// Shared base window settings
+		window.width      = CANVAS_W;
+		window.height     = CANVAS_H;
+		window.fps        = TARGET_FPS;
+		window.background = 0x000000;
+		window.hardware   = true;
+		window.vsync      = false;
+		window.resizable  = true;
+		window.fullscreen = false;
 
-			// Output directory for the compiled web build
-			app.path = "export/html5";
-			app.file = "index";
+		switch (target) {
 
-			// WebGL renderer for hardware-accelerated 2-D graphics
-			haxedefs.push({ name: "openfl_html5_use_webgl", value: "1" });
+			case HTML5:
+				// ── HTML5 ─────────────────────────────────────────────────────
+				app.path = "export/html5";
+				app.file = "index";
 
-			// Preload all assets so the game is playable without mid-session loads
-			haxedefs.push({ name: "openfl_preload_all",     value: "1" });
+				// WebGL for hardware-accelerated 2-D rendering in the browser
+				haxedefs.push({ name: "openfl_html5_use_webgl",       value: "1" });
 
-			// Suppress web audio context warnings on browsers with strict autoplay policy
-			haxedefs.push({ name: "FLX_NO_SOUND_SYSTEM",   value: "0" });
+				// Typed arrays improve number-crunching performance in JS VMs
+				haxedefs.push({ name: "lime_html5_use_typed_arrays",   value: "1" });
 
-			// Use typed-arrays for better JS-side performance
-			haxedefs.push({ name: "lime_html5_use_typed_arrays", value: "1" });
+				// Preload every asset before entering the main menu so there are
+				// no mid-session load stalls — important for a web deployment
+				haxedefs.push({ name: "openfl_preload_all",            value: "1" });
+
+				// Prevent the canvas from capturing all keyboard shortcuts,
+				// allowing the browser's own shortcuts to still work outside the game
+				haxedefs.push({ name: "openfl_html5_allow_focus",      value: "1" });
+
+				// Keep audio enabled (browsers require a user gesture first;
+				// OpenFL resumes the AudioContext automatically on the first click)
+				haxedefs.push({ name: "FLX_NO_SOUND_SYSTEM",          value: "0" });
+
+			case WINDOWS:
+				app.path = "export/windows";
+
+			case LINUX:
+				app.path = "export/linux";
+
+			case MAC:
+				app.path = "export/mac";
+
+			default:
+				app.path = "export/other";
 
 		}
 
-		// ─── Desktop Fallback (ignored when targeting HTML5) ──────────────────────
-		if (target == WINDOWS || target == LINUX || target == MAC) {
-			window.width  = 640;
-			window.height = 480;
-			window.fps    = 60;
-			app.path      = "export/desktop";
-		}
+	}
 
-		// ─── Splash / Icon ────────────────────────────────────────────────────────
-		// Place a 256×256 icon at assets/images/icon.png for web favicon support
-		icons.push({ path: "assets/images/icon.png" });
-
+	// ─── Icons ────────────────────────────────────────────────────────────────
+	// icon.png lives in assets/arts/ — 256×256 PNG recommended.
+	// Lime uses it as the browser favicon (HTML5), taskbar icon (desktop),
+	// and app icon (mobile) automatically.
+	function setupIcons() {
+		icons.push({ path: "assets/arts/icon.png" });
 	}
 
 }
