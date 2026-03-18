@@ -49,6 +49,7 @@ jobs:
       - name: 📦 Install haxelibs
         if: steps.haxelib-cache.outputs.cache-hit != 'true'
         run: |
+          haxelib install hxp           --quiet
           haxelib install lime          --quiet
           haxelib install openfl        --quiet
           haxelib install flixel        --quiet
