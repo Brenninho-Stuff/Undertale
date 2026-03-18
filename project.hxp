@@ -1,6 +1,8 @@
 import lime.tools.HXProject;
-import lime.tools.Architecture;
-import lime.tools.Platform;
+import lime.tools.Asset;
+import lime.tools.AssetType;
+import lime.tools.Icon;
+import hxp.Haxelib;
 
 class Project extends HXProject {
 
@@ -31,7 +33,7 @@ class Project extends HXProject {
 	}
 
 	// ─── Meta ─────────────────────────────────────────────────────────────────
-	function setupMeta() {
+	function setupMeta():Void {
 		meta.title       = GAME_TITLE;
 		meta.packageName = PACKAGE_NAME;
 		meta.version     = VERSION;
@@ -40,70 +42,57 @@ class Project extends HXProject {
 	}
 
 	// ─── Sources ──────────────────────────────────────────────────────────────
-	function setupSources() {
+	function setupSources():Void {
 		sources.push("source");
 	}
 
 	// ─── Assets ───────────────────────────────────────────────────────────────
-	// One recursive entry — Lime walks every subfolder and infers asset types
-	// automatically (.png → IMAGE, .ogg/.wav → SOUND, .ttf → FONT, etc.).
-	// Any new folder added under assets/ is picked up on the next build with
-	// zero configuration changes required here.
-	function setupAssets() {
-		assets.push({
-			path   : "assets",
-			rename : "assets",
-			include: "*"
-		});
+	// addAssets() recursively walks the given directory and infers each file's
+	// AssetType from its extension — no per-subfolder entries required.
+	function setupAssets():Void {
+		addAssets("assets", "assets");
 	}
 
 	// ─── Dependencies ─────────────────────────────────────────────────────────
-	function setupDependencies() {
-		// Core HaxeFlixel stack — version strings intentionally left blank so
-		// haxelib resolves whichever version is set via `haxelib set`.
-		final libs = [
-			"flixel",          // Core HaxeFlixel game framework
-			"flixel-addons",   // Extra camera modes, transitions, tilemaps
-			"flixel-ui",       // UI widgets (buttons, sliders, text input)
-			"openfl",          // Flash-compatible display API on top of Lime
-			"lime",            // Low-level platform abstraction layer
-			"hscript",         // Runtime scripting for dialogue and events
-			"actuate",         // Lightweight tweening / animation library
-		];
-
-		for (lib in libs)
-			haxelibs.push({ name: lib, version: "" });
+	function setupDependencies():Void {
+		// Haxelib constructor: new Haxelib(name, version)
+		// Empty string → resolves whatever version is active via `haxelib set`
+		haxelibs.push(new Haxelib("flixel",         ""));
+		haxelibs.push(new Haxelib("flixel-addons",  ""));
+		haxelibs.push(new Haxelib("flixel-ui",      ""));
+		haxelibs.push(new Haxelib("openfl",          ""));
+		haxelibs.push(new Haxelib("lime",            ""));
+		haxelibs.push(new Haxelib("hscript",         ""));
+		haxelibs.push(new Haxelib("actuate",         ""));
 	}
 
 	// ─── Compiler Flags ───────────────────────────────────────────────────────
-	function setupCompilerFlags() {
+	// haxedefs is a Map<String, Dynamic> — use bracket notation, not .push()
+	function setupCompilerFlags():Void {
 
 		// ── Feature toggles ──────────────────────────────────────────────────
-		haxedefs.push({ name: "HSCRIPT_ALLOWED",            value: "1" }); // HScript events
-		haxedefs.push({ name: "MOD_SUPPORT",                value: "1" }); // Runtime mod loading
-		haxedefs.push({ name: "SAVE_STATES",                value: "1" }); // Developer save-states
+		haxedefs["HSCRIPT_ALLOWED"]          = 1;  // HScript dialogue/events
+		haxedefs["MOD_SUPPORT"]              = 1;  // Runtime mod loading
+		haxedefs["SAVE_STATES"]              = 1;  // Developer save-states
 
 		// ── Flixel subsystem toggles ─────────────────────────────────────────
-		haxedefs.push({ name: "FLX_NO_TOUCH",               value: "1" }); // Disable touch (KB-only game)
-		haxedefs.push({ name: "FLX_NO_MOUSE",               value: "0" }); // Keep mouse support
-		haxedefs.push({ name: "FLX_NO_KEYBOARD",            value: "0" }); // Keep keyboard support
-		haxedefs.push({ name: "FLX_NO_SOUND_TRAY",          value: "1" }); // Hide built-in sound tray
-		haxedefs.push({ name: "FLX_NO_FOCUS_LOST_SCREEN",   value: "1" }); // Skip "Click to resume" overlay
+		haxedefs["FLX_NO_TOUCH"]             = 1;  // Keyboard-only game
+		haxedefs["FLX_NO_SOUND_TRAY"]        = 1;  // Hide built-in sound tray
+		haxedefs["FLX_NO_FOCUS_LOST_SCREEN"] = 1;  // Skip "Click to resume" overlay
 
 		// ── Debug vs. Release ────────────────────────────────────────────────
 		#if debug
-		haxedefs.push({ name: "FLX_DEBUG",                  value: "1" });
-		haxedefs.push({ name: "FLX_RECORD",                 value: "1" }); // Flixel replay recording
+		haxedefs["FLX_DEBUG"]  = 1;
+		haxedefs["FLX_RECORD"] = 1;  // Flixel replay recording system
 		#else
-		haxedefs.push({ name: "FLX_NO_DEBUG",               value: "1" });
+		haxedefs["FLX_NO_DEBUG"] = 1;
 		#end
 
 	}
 
 	// ─── Window & Output ──────────────────────────────────────────────────────
-	function setupWindowAndOutput() {
+	function setupWindowAndOutput():Void {
 
-		// Shared base window settings
 		window.width      = CANVAS_W;
 		window.height     = CANVAS_H;
 		window.fps        = TARGET_FPS;
@@ -116,27 +105,12 @@ class Project extends HXProject {
 		switch (target) {
 
 			case HTML5:
-				// ── HTML5 ─────────────────────────────────────────────────────
 				app.path = "export/html5";
 				app.file = "index";
 
-				// WebGL for hardware-accelerated 2-D rendering in the browser
-				haxedefs.push({ name: "openfl_html5_use_webgl",       value: "1" });
-
-				// Typed arrays improve number-crunching performance in JS VMs
-				haxedefs.push({ name: "lime_html5_use_typed_arrays",   value: "1" });
-
-				// Preload every asset before entering the main menu so there are
-				// no mid-session load stalls — important for a web deployment
-				haxedefs.push({ name: "openfl_preload_all",            value: "1" });
-
-				// Prevent the canvas from capturing all keyboard shortcuts,
-				// allowing the browser's own shortcuts to still work outside the game
-				haxedefs.push({ name: "openfl_html5_allow_focus",      value: "1" });
-
-				// Keep audio enabled (browsers require a user gesture first;
-				// OpenFL resumes the AudioContext automatically on the first click)
-				haxedefs.push({ name: "FLX_NO_SOUND_SYSTEM",          value: "0" });
+				haxedefs["openfl_html5_use_webgl"]     = 1;  // WebGL renderer
+				haxedefs["lime_html5_use_typed_arrays"] = 1;  // Faster JS number ops
+				haxedefs["openfl_preload_all"]          = 1;  // Preload before main menu
 
 			case WINDOWS:
 				app.path = "export/windows";
@@ -155,11 +129,10 @@ class Project extends HXProject {
 	}
 
 	// ─── Icons ────────────────────────────────────────────────────────────────
-	// icon.png lives in assets/arts/ — 256×256 PNG recommended.
-	// Lime uses it as the browser favicon (HTML5), taskbar icon (desktop),
-	// and app icon (mobile) automatically.
-	function setupIcons() {
-		icons.push({ path: "assets/arts/icon.png" });
+	// Icon constructor: new Icon(path)
+	// Lime uses this as the browser favicon (HTML5) and taskbar/app icon elsewhere.
+	function setupIcons():Void {
+		icons.push(new Icon("assets/arts/icon.png"));
 	}
 
 }
