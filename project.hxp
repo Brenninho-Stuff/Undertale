@@ -1,7 +1,5 @@
-import lime.tools.HXProject;
-import lime.tools.Asset;
-import lime.tools.Icon;
-import hxp.Haxelib;
+import hxp.*;
+import lime.tools.*;
 
 class Project extends HXProject {
 
@@ -46,15 +44,10 @@ class Project extends HXProject {
 	}
 
 	// ─── Assets ───────────────────────────────────────────────────────────────
-	// Lime's Asset object accepts `path`, `rename`, and `include` as fields.
-	// Setting include to "*" tells Lime to recurse every subfolder and infer
-	// each file's AssetType automatically from its extension.
+	// includeAssets(sourcePath, renamePath, include, exclude)
+	// ["*"] recurses every subfolder; Lime infers AssetType from extension.
 	function setupAssets():Void {
-		var a     = new Asset();
-		a.path    = "assets";
-		a.rename  = "assets";
-		a.include = "*";
-		assets.push(a);
+		includeAssets("assets", "assets", ["*"], []);
 	}
 
 	// ─── Dependencies ─────────────────────────────────────────────────────────
@@ -69,7 +62,7 @@ class Project extends HXProject {
 	}
 
 	// ─── Compiler Flags ───────────────────────────────────────────────────────
-	// haxedefs is Map<String, Dynamic> — use bracket notation
+	// haxedefs is Map<String, Dynamic> — bracket notation only, no .push()
 	function setupCompilerFlags():Void {
 
 		haxedefs["HSCRIPT_ALLOWED"]          = 1;
@@ -128,10 +121,11 @@ class Project extends HXProject {
 	}
 
 	// ─── Icons ────────────────────────────────────────────────────────────────
+	// new Icon(path, size, priority)
+	// size = 0 → Lime picks the best size automatically.
+	// priority = 0 → default priority.
 	function setupIcons():Void {
-		var icon  = new Icon();
-		icon.path = "assets/arts/icon.png";
-		icons.push(icon);
+		icons.push(new Icon("arts/icon.png", 0, 0));
 	}
 
 }
