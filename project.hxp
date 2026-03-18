@@ -1,30 +1,87 @@
-# HaxeFlixel Project (HXP) - Simple HTML5
+import lime.tools.HXProject;
 
-projectName=Undertale
-package=com.example.undertale
-version=0.1.0
+class Project extends HXProject {
 
-# Haxe version
-haxeVersion=4.3.7
+	public function new() {
 
-# Source path
-source=source
+		super();
 
-# Assets paths
-assets=assets/images
-assets=assets/sounds
-assets=assets/music
-assets=assets/fonts
+		// ─── Identity ────────────────────────────────────────────────────────────
+		meta.title       = "Undertale Fan Engine";
+		meta.packageName = "com.brenninho.undertale";
+		meta.version     = "1.0.0";
+		meta.company     = "Brenninho-Stuff";
+		meta.buildNumber = "1";
 
-# Libraries
-library=flixel:4.3.7
-library=flixel-ui
+		// ─── Source Directories ───────────────────────────────────────────────────
+		sources.push("source");
 
-# Target HTML5
-target=html5
-mainClass=Main
-output=bin
-width=640
-height=480
-fullscreen=false
-vsync=false
+		// ─── Assets ───────────────────────────────────────────────────────────────
+		// Single recursive entry — Lime auto-detects every subfolder and file type
+		assets.push({ path: "assets", rename: "assets", include: "*" });
+
+		// ─── Haxelib Dependencies ─────────────────────────────────────────────────
+		haxelibs.push({ name: "flixel",         version: "" });
+		haxelibs.push({ name: "flixel-addons",  version: "" });
+		haxelibs.push({ name: "flixel-ui",      version: "" });
+		haxelibs.push({ name: "openfl",         version: "" });
+		haxelibs.push({ name: "lime",           version: "" });
+
+		// ─── Compiler Flags ───────────────────────────────────────────────────────
+		// Enable hscript for runtime scripting support (used in many UT engines)
+		haxedefs.push({ name: "HSCRIPT_ALLOWED",   value: "1" });
+
+		// Enables the Flixel debug overlay in non-release builds
+		haxedefs.push({ name: "FLX_DEBUG",          value: "1" });
+
+		// Disable Flixel's verbose logging in release mode
+		#if release
+		haxedefs.push({ name: "FLX_NO_DEBUG",       value: "1" });
+		#end
+
+		// ─── HTML5-Specific Configuration ────────────────────────────────────────
+		if (target == HTML5) {
+
+			// Logical canvas resolution — Undertale's native resolution
+			window.width  = 640;
+			window.height = 480;
+
+			// Stretch to fill browser viewport while preserving aspect ratio
+			window.resizable    = true;
+			window.fullscreen   = false;
+			window.hardware     = true;
+			window.vsync        = false;
+
+			// Output directory for the compiled web build
+			app.path = "export/html5";
+			app.file = "index";
+
+			// WebGL renderer for hardware-accelerated 2-D graphics
+			haxedefs.push({ name: "openfl_html5_use_webgl", value: "1" });
+
+			// Preload all assets so the game is playable without mid-session loads
+			haxedefs.push({ name: "openfl_preload_all",     value: "1" });
+
+			// Suppress web audio context warnings on browsers with strict autoplay policy
+			haxedefs.push({ name: "FLX_NO_SOUND_SYSTEM",   value: "0" });
+
+			// Use typed-arrays for better JS-side performance
+			haxedefs.push({ name: "lime_html5_use_typed_arrays", value: "1" });
+
+		}
+
+		// ─── Desktop Fallback (ignored when targeting HTML5) ──────────────────────
+		if (target == WINDOWS || target == LINUX || target == MAC) {
+			window.width  = 640;
+			window.height = 480;
+			window.fps    = 60;
+			app.path      = "export/desktop";
+		}
+
+		// ─── Splash / Icon ────────────────────────────────────────────────────────
+		// Place a 256×256 icon at assets/images/icon.png for web favicon support
+		icons.push({ path: "assets/images/icon.png" });
+
+	}
+
+}
